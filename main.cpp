@@ -3,12 +3,14 @@
 vector<string>directories;
 vector<char>command_input;
 stack<string>back,forward_stack;
+vector<string>arguments;
 struct termios original_raw,new_raw;
 struct winsize window_size;
 int currentWindowRow,currentWindowWidth;
 string curr_dir;
 string home;
 string my_command;
+
 int first,last=25;
 int x,y;
 int ARROW_KEY = 27;
@@ -623,18 +625,49 @@ int command_mode()
 		}
 		else if(c==ENTER)
 		{
+			//command_input.push_back('\n');
 			my_command=split_command();
+			my_command="create_file";
+
 			if(my_command=="create_file")
 			{
-				int t=0;
-				for(int i=0;i<(int)command_input.size();i++)
+				//cout<<arguments.size();
+				if(arguments.size()==2)
 				{
-					if(t==0 && command_input[i]==' ')
-					{}
+					string filename=arguments[0];
+					string filePath=getPath(filename,arguments[1]);
+					//cout<<filePath;
+					int res=createFile(filePath);
+					if(res==0)
+					{
+						cout<<"Invalid Path/Filename Given";
+					}
 				}
-				fstream outfile ("test.txt");
+				else
+				{
+					//INVALID Input
+				}	
 			}
-			
+
+			else
+			{
+				//INVALID Input
+			}
+			arguments.clear();
+			my_command="";
+			command_input.clear();
+		}
+		else if(c==BACKSPACE)
+		{
+
+			if(y==2)	//Dont Delete ':'
+			{
+				continue;
+			}
+			command_input.pop_back();
+			y--;
+			jump(x,y);
+			cout<<"\033[0K";
 		}
 		else
 		{
@@ -648,7 +681,81 @@ int command_mode()
 	
 
 }
+int createFile(string inp)
+{
+	char *entry=&inp[0];
+	int res=open(entry,O_WRONLY | O_CREAT,(S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH| S_IXOTH));
+	if(res<0)
+	{
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
 
+}
+string getPath(string filename,string arg)
+{
+	if(arg.length()==1 && arg[0]=='.')
+	{
+		return curr_dir+"/"+filename;
+	}
+	if((arg.length()==1 && arg[0]=='~') || (arg.length()==2 && arg[0]=='~' && arg[1]=='/'))
+	{
+		return home+"/"+filename;
+	}
+	else	//if(arg.length()>1)
+	{
+		if(arg[0]=='.' && arg[1]=='/')
+		{
+			return curr_dir+"/"+arg.substr(2)+"/"+filename;
+		}
+		else if(arg[0]=='~' && arg[1]=='/')
+		{
+			return home+"/"+arg.substr(2)+"/"+filename;
+		}
+		else if(arg[0]=='.' && arg[1]=='.' && arg[2]=='/')
+		{
+			string ab="";
+			int i;
+			for(i=curr_dir.length()-1;i>=0;i--)
+			{
+				if(curr_dir[i]=='/')
+				{
+					break;
+				}
+			}
+			ab=curr_dir.substr(0,i);
+			
+			if(arg.length()==3)
+			{
+				return ab+"/"+filename;
+			}
+			else
+			{
+				return ab+"/"+arg.substr(3)+"/"+filename;
+			}
+		}
+		else
+		{
+			if(arg.length()==1 && arg[0]=='/')
+			{
+				
+				return home+"/"+filename;
+			}
+			else if(arg[0]=='/')
+			{
+				return home+arg+"/"+filename;
+			}
+			else
+			{
+				return curr_dir+"/"+arg+"/"+filename;
+			}
+			
+		}
+	}
+}
 string split_command()
 {
 	int i=0;
@@ -664,5 +771,33 @@ string split_command()
 			break;
 		}
 	}
+	string param="";
+	for(int j=i+1;j<(int)command_input.size();j++)
+	{
+		if(command_input[j]!=' ')
+		{
+			param.append(1,command_input[j]);
+		}
+		else
+		{
+			if(param.length()!=1)
+			{
+				if(param[param.length()-1]=='/')
+				{
+					param.pop_back();
+				}
+			}
+			arguments.push_back(param);
+			param="";
+		}
+	}
+	if(param.length()!=1)
+	{
+		if(param[param.length()-1]=='/')
+		{
+			param.pop_back();
+		}
+	}
+	arguments.push_back(param);
 	return temp;
 }

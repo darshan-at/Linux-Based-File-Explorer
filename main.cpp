@@ -1,11 +1,14 @@
 #include "header.h"
 
 vector<string>directories;
+vector<char>command_input;
 stack<string>back,forward_stack;
 struct termios original_raw,new_raw;
 struct winsize window_size;
+int currentWindowRow,currentWindowWidth;
 string curr_dir;
 string home;
+string my_command;
 int first,last=25;
 int x,y;
 int ARROW_KEY = 27;
@@ -15,7 +18,7 @@ int ENTER=10;
 int BACKSPACE=127;
 int RIGHT_KEY=67;
 int LEFT_KEY=68;
-
+	
 int main()
 {
 	
@@ -25,10 +28,11 @@ int main()
 	curr_dir=pwd;
 	home=curr_dir;
 	ioctl(STDIN_FILENO, TIOCGWINSZ, &window_size);	//get Window Size
+	currentWindowRow=window_size.ws_row;
+	currentWindowWidth=window_size.ws_col;
 	//enter into RAW MODE
 	char *temp;
 	temp=&pwd[0];
-	
 	enableRAW(temp);
 	CLEAR_SCREEN;
 	return 0;
@@ -295,7 +299,7 @@ void enableRAW(char *pwd)
 	//list all directories with metadata
 	list_dir(pwd);
 	first=0;
-	last=min(window_size.ws_row-3,(int)directories.size());
+	last=min(currentWindowRow-3,(int)directories.size());
 	//Print the directories
 	print_list(directories,first,last);
 	//to get original setting
@@ -309,6 +313,9 @@ void enableRAW(char *pwd)
 		fprintf(stderr,"Fail to achieve desired attribute");
 	}
 	looping(first,last);
+	
+		
+	
 }
 
 void looping(int first,int last)
@@ -322,11 +329,23 @@ void looping(int first,int last)
 	fflush(0);
 	while(true)
 	{
-		
+		cin.clear();
 		ioctl(STDIN_FILENO, TIOCGWINSZ, &window_size);	//get Window Size
-		jump(window_size.ws_row-1,0);
+		if(window_size.ws_row!=currentWindowRow || window_size.ws_col!=currentWindowWidth)
+		{
+			char *entry=&curr_dir[0];
+			currentWindowRow=window_size.ws_row;
+			currentWindowWidth=window_size.ws_col;
+			list_dir(entry);
+			last=min(currentWindowRow-3,(int)directories.size());
+			print_list(directories,0,last);
+			curpos=1;
+			first=0;
+			continue;
+		}
+		jump(currentWindowRow-2,0);
 		printf("Normal Mode");
-		jump(first+curpos,y);
+		jump(curpos,y);
 		c=cin.get();
 		if(c==ARROW_KEY)
 		{
@@ -336,30 +355,36 @@ void looping(int first,int last)
 			{
 				curpos++;
 				//first++;
-				jump(first+curpos,y);
+				//cout<<first+curpos;
+				jump(curpos,y);
+				
 				if(first+curpos>last)
 				{
 					curpos--;
 					//first--;
-					jump(first+curpos,y);
+					jump(curpos,y);
 					continue;
 				}
-				last=min(window_size.ws_row-3,(int)directories.size());
+				//last=min(window_size.ws_row-3,(int)directories.size());
 				
 			}
 			else if(c==UP_KEY)
 			{
+				if(curpos==1)
+				{
+					continue;
+				}
 				curpos--;
 				//first--;
-				jump(first+curpos,y);
-				if(first+curpos<=0)
+				jump(curpos,y);
+				/*if(first+curpos<=0)
 				{
 					curpos++;
 					//first++;
-					jump(first+curpos,y);
+					jump(curpos,y);
 					continue;
-				}
-				last=min(window_size.ws_row-3,(int)directories.size());
+				}*/
+				//last=min(window_size.ws_row-3,(int)directories.size());
 				
 			}
 			else if(c==LEFT_KEY)
@@ -374,9 +399,10 @@ void looping(int first,int last)
 					char *entry=&toGo[0];
 					curr_dir=toGo;
 					list_dir(entry);
-					last=min(window_size.ws_row-3,(int)directories.size());
+					last=min(currentWindowRow-3,(int)directories.size());
 					print_list(directories,0,last);
 					curpos=1;
+					first=0;
 				}
 			}
 			else if(c==RIGHT_KEY)
@@ -390,9 +416,10 @@ void looping(int first,int last)
 					char *entry=&toGo[0];
 					curr_dir=toGo;
 					list_dir(entry);
-					last=min(window_size.ws_row-3,(int)directories.size());
+					last=min(currentWindowRow-3,(int)directories.size());
 					print_list(directories,0,last);
 					curpos=1;
+					first=0;
 				}
 			}
 		}
@@ -435,9 +462,10 @@ void looping(int first,int last)
 					curr_dir=curr_dir.substr(0,i);
 					char *entry=&curr_dir[0];
 					list_dir(entry);
-					last=min(window_size.ws_row-3,(int)directories.size());
+					last=min(currentWindowRow-3,(int)directories.size());
 					print_list(directories,0,last);
 					curpos=1;
+					first=0;
 				}
 				else
 				{
@@ -448,9 +476,10 @@ void looping(int first,int last)
 						char *entry=&temp[0];
 						curr_dir=temp;
 						list_dir(entry);
-						last=min(window_size.ws_row-3,(int)directories.size());
+						last=min(currentWindowRow-3,(int)directories.size());
 						print_list(directories,0,last);
 						curpos=1;
+						first=0;
 						
 					}
 					else
@@ -493,33 +522,34 @@ void looping(int first,int last)
 			curr_dir=curr_dir.substr(0,i);
 			char *entry=&curr_dir[0];
 			list_dir(entry);
-			last=min(window_size.ws_row-3,(int)directories.size());
+			last=min(currentWindowRow-3,(int)directories.size());
 			print_list(directories,0,last);
 			curpos=1;
+			first=0;
 		}
 		
 		else if(c=='k' || c=='K') //scroll up ^
 		{
-			if(curpos==1 || directories.size()<=last || (curpos>=1 && curpos<window_size.ws_row-3))
+			if(directories.size()<last || first==0)
 			{
-				cout<<"f";
+				//cout<<"f";
 				continue;
 			}
 			first--;
 			last--;
-			print_list(directories,first+curpos,last); 
+			print_list(directories,first,last); 
 		}
 		else if(c=='l' || c=='L') //Scroll Down 
 		{
-			if(curpos==window_size.ws_row-3 || directories.size()<=last)
+			if(directories.size()<=last)
 			{
-				cout<<last;
+				//cout<<last;
 				continue;
 			}
 			
 			last++;
 			first++;
-			print_list(directories,first+curpos,last);
+			print_list(directories,first,last);
 			
 		}
 		else if(c=='h' || c=='H')
@@ -528,17 +558,19 @@ void looping(int first,int last)
 			char *entry=&home[0];
 			curr_dir=home;
 			list_dir(entry);
-			last=min(window_size.ws_row-3,(int)directories.size());
+			last=min(currentWindowRow-3,(int)directories.size());
 			print_list(directories,0,last);
 			curpos=1;
+			first=0;
 		}
 		else if(c=='q')
 		{
 			break;
 		}
-		else
+		else if(c==58)
 		{
-			cout<<(int)c;
+			
+			int r=command_mode();
 		}
 		
 	}
@@ -562,4 +594,75 @@ int check_dir(string path)
 	{
 		return 0;
 	}
+}
+
+//----------------------------------------------Command Mode--------------------------------
+
+int command_mode()
+{
+	unsigned char c;
+	x=currentWindowRow-2;
+	y=1;
+	jump(x,y);
+	cout<<"\033[2K";		//clears the entire line
+	cout<<"\033[38;5;50m";	//ESC[38;5;{ID}m sets background color and ID is 50 for bright blue
+	cout<<":";
+	
+	cout<<"\033[0m";	//Resets color again to default
+	cin.clear();
+	
+	y++;
+	while(true)
+	{
+		c=cin.get();
+
+		if(c=='q')
+		{
+			cout<<"\033[2K";
+			return 1;
+		}
+		else if(c==ENTER)
+		{
+			my_command=split_command();
+			if(my_command=="create_file")
+			{
+				int t=0;
+				for(int i=0;i<(int)command_input.size();i++)
+				{
+					if(t==0 && command_input[i]==' ')
+					{}
+				}
+				fstream outfile ("test.txt");
+			}
+			
+		}
+		else
+		{
+			cout<<c;
+			command_input.push_back(c);
+			y++;
+			jump(x,y);
+		}
+	}
+	return 1;
+	
+
+}
+
+string split_command()
+{
+	int i=0;
+	string temp="";
+	for(i=0;i<command_input.size();i++)
+	{
+		if(command_input[i]!=' ')
+		{
+			temp.append(1,command_input[i]);
+		}
+		if(command_input[i]==' ')
+		{
+			break;
+		}
+	}
+	return temp;
 }

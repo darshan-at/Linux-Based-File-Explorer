@@ -27,6 +27,11 @@ long long get_Dir_size(char *);
 string human_readable(long long);
 void looping(int,int);
 int command_mode();
-string getPath(string,string);
+string getPath(string);
 string split_command();
+
 int createFile(string);
+int createDir(string);
+int my_rename(string,string);
+int go_to(string);
+void command_console(string);

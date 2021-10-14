@@ -42,9 +42,6 @@ int main()
 
 void list_dir(char *pwd)
 {
-	/*first=0;
-	last=25;*/
-
 	// Start
 	CLEAR_SCREEN;
 	
@@ -59,30 +56,21 @@ void list_dir(char *pwd)
 	}
 	else
 	{
-		
 		while ((entry = readdir(dir))!=NULL)
 		{	
 			string s=curr_dir+"/"+(entry->d_name);
-			
 			directories.push_back(s);	
 		}	
 			
 	}
 	sort(directories.begin(),directories.end());
-	
-	//End
-	/*last=min(min(window_size.ws_row-3,(int)directories.size()),last);
-	
-	print_list();*/
 	closedir(dir);
 }
 void print_list(vector<string>directories,int s,int e)
 {
 	
 	CLEAR_SCREEN;
-	x=1;
-	y=0;
-	jump(x,y);
+	jump(1,0);
 	
 	for(int i=s;i<e;i++)
 	{
@@ -91,9 +79,7 @@ void print_list(vector<string>directories,int s,int e)
 		
 		display_info(directories[i]);
 	}
-	x=1;
-	y=0;
-	jump(x,y);
+	jump(1,0);
 }
 long long get_Dir_size(char *dir_path)
 {
@@ -301,7 +287,7 @@ void enableRAW(char *pwd)
 	//list all directories with metadata
 	list_dir(pwd);
 	first=0;
-	last=min(currentWindowRow-3,(int)directories.size());
+	last=min(currentWindowRow-4,(int)directories.size());
 	//Print the directories
 	print_list(directories,first,last);
 	//to get original setting
@@ -314,10 +300,7 @@ void enableRAW(char *pwd)
 	{
 		fprintf(stderr,"Fail to achieve desired attribute");
 	}
-	looping(first,last);
-	
-		
-	
+	looping(first,last);	
 }
 
 void looping(int first,int last)
@@ -339,15 +322,20 @@ void looping(int first,int last)
 			currentWindowRow=window_size.ws_row;
 			currentWindowWidth=window_size.ws_col;
 			list_dir(entry);
-			last=min(currentWindowRow-3,(int)directories.size());
+			last=min(currentWindowRow-4,(int)directories.size());
 			print_list(directories,0,last);
 			curpos=1;
 			first=0;
 			continue;
 		}
-		jump(currentWindowRow-2,0);
+		jump(currentWindowRow-3,0);
+		cout<<"\033[38;5;50m";
 		printf("Normal Mode");
+		cout<<"\033[0m";
+		jump(currentWindowRow-2,1);
+		cout<<"Current Directory is:"<<curr_dir;
 		jump(curpos,y);
+
 		c=cin.get();
 		if(c==ARROW_KEY)
 		{
@@ -367,7 +355,7 @@ void looping(int first,int last)
 					jump(curpos,y);
 					continue;
 				}
-				//last=min(window_size.ws_row-3,(int)directories.size());
+				//last=min(window_size.ws_row-4,(int)directories.size());
 				
 			}
 			else if(c==UP_KEY)
@@ -386,7 +374,7 @@ void looping(int first,int last)
 					jump(curpos,y);
 					continue;
 				}*/
-				//last=min(window_size.ws_row-3,(int)directories.size());
+				//last=min(window_size.ws_row-4,(int)directories.size());
 				
 			}
 			else if(c==LEFT_KEY)
@@ -401,7 +389,7 @@ void looping(int first,int last)
 					char *entry=&toGo[0];
 					curr_dir=toGo;
 					list_dir(entry);
-					last=min(currentWindowRow-3,(int)directories.size());
+					last=min(currentWindowRow-4,(int)directories.size());
 					print_list(directories,0,last);
 					curpos=1;
 					first=0;
@@ -418,7 +406,7 @@ void looping(int first,int last)
 					char *entry=&toGo[0];
 					curr_dir=toGo;
 					list_dir(entry);
-					last=min(currentWindowRow-3,(int)directories.size());
+					last=min(currentWindowRow-4,(int)directories.size());
 					print_list(directories,0,last);
 					curpos=1;
 					first=0;
@@ -464,7 +452,7 @@ void looping(int first,int last)
 					curr_dir=curr_dir.substr(0,i);
 					char *entry=&curr_dir[0];
 					list_dir(entry);
-					last=min(currentWindowRow-3,(int)directories.size());
+					last=min(currentWindowRow-4,(int)directories.size());
 					print_list(directories,0,last);
 					curpos=1;
 					first=0;
@@ -478,7 +466,7 @@ void looping(int first,int last)
 						char *entry=&temp[0];
 						curr_dir=temp;
 						list_dir(entry);
-						last=min(currentWindowRow-3,(int)directories.size());
+						last=min(currentWindowRow-4,(int)directories.size());
 						print_list(directories,0,last);
 						curpos=1;
 						first=0;
@@ -524,7 +512,7 @@ void looping(int first,int last)
 			curr_dir=curr_dir.substr(0,i);
 			char *entry=&curr_dir[0];
 			list_dir(entry);
-			last=min(currentWindowRow-3,(int)directories.size());
+			last=min(currentWindowRow-4,(int)directories.size());
 			print_list(directories,0,last);
 			curpos=1;
 			first=0;
@@ -560,7 +548,7 @@ void looping(int first,int last)
 			char *entry=&home[0];
 			curr_dir=home;
 			list_dir(entry);
-			last=min(currentWindowRow-3,(int)directories.size());
+			last=min(currentWindowRow-4,(int)directories.size());
 			print_list(directories,0,last);
 			curpos=1;
 			first=0;
@@ -573,6 +561,12 @@ void looping(int first,int last)
 		{
 			
 			int r=command_mode();
+			char *entry=&curr_dir[0];
+			list_dir(entry);
+			last=min(currentWindowRow-4,(int)directories.size());
+			print_list(directories,0,last);
+			curpos=1;
+			first=0;
 		}
 		
 	}
@@ -603,55 +597,153 @@ int check_dir(string path)
 int command_mode()
 {
 	unsigned char c;
-	x=currentWindowRow-2;
+	x=currentWindowRow-3;
 	y=1;
 	jump(x,y);
 	cout<<"\033[2K";		//clears the entire line
 	cout<<"\033[38;5;50m";	//ESC[38;5;{ID}m sets background color and ID is 50 for bright blue
-	cout<<":";
+	cout<<"Command Mode:";
 	
 	cout<<"\033[0m";	//Resets color again to default
-	cin.clear();
+	x++;
+	jump(x,y);
+	cout<<"Current Directory is:"<<curr_dir;
 	
-	y++;
+	cin.clear();
+	x=currentWindowRow-3;
+	y=14;
+	jump(x,y);
 	while(true)
 	{
 		c=cin.get();
 
 		if(c=='q')
 		{
+
 			cout<<"\033[2K";
+			y=1;
 			return 1;
 		}
 		else if(c==ENTER)
 		{
 			//command_input.push_back('\n');
 			my_command=split_command();
-			my_command="create_file";
+			
 
 			if(my_command=="create_file")
 			{
-				//cout<<arguments.size();
+				//cout<	x<arguments.size();
 				if(arguments.size()==2)
 				{
 					string filename=arguments[0];
-					string filePath=getPath(filename,arguments[1]);
-					//cout<<filePath;
-					int res=createFile(filePath);
+					string filePath=getPath(arguments[1]);
+					filename=filePath+"/"+filename;
+					int res=createFile(filename);
 					if(res==0)
 					{
-						cout<<"Invalid Path/Filename Given";
+						command_console("Invalid Path/Filename given");
+					}
+					else
+					{
+						
+						char *entry=&curr_dir[0];
+						list_dir(entry);
+						last=min(currentWindowRow-4,(int)directories.size());
+						print_list(directories,0,last);
+						jump(x,y);
+						command_console("");
+						command_console("Created Successfully");
 					}
 				}
 				else
 				{
-					//INVALID Input
+					command_console("Invalid Number of Arguments");
 				}	
 			}
-
+			else if(my_command=="create_dir")
+			{
+		
+				if(arguments.size()==2)
+				{
+					string filename=arguments[0];
+					string filePath=getPath(arguments[1]);
+					filename=filePath+"/"+filename;
+					int res=createDir(filename);
+					if(res==0)
+					{
+						command_console("Invalid Path/Filename given");
+					}
+					else if(res==1)
+					{	
+						char *entry=&curr_dir[0];
+						list_dir(entry);
+						last=min(currentWindowRow-4,(int)directories.size());
+						print_list(directories,0,last);
+						jump(x,y);
+						command_console("");
+						command_console("Created Successfully");
+					}
+				}
+				else
+				{
+					command_console("Invalid Number of Arguments");
+				}	
+			}
+			else if(my_command=="rename")
+			{
+		
+				if(arguments.size()==2)
+				{
+					string oldPath=getPath(arguments[0]);
+					
+					string newPath=getPath(arguments[1]);
+					int res=my_rename(oldPath,newPath);
+					if(res==0)
+					{
+						command_console("Invalid Inputs");
+					}
+					else if(res==1)
+					{	
+						
+						if(oldPath==curr_dir)
+						{
+							curr_dir=newPath;
+						}
+						char *entry=&curr_dir[0];
+						list_dir(entry);
+						last=min(currentWindowRow-4,(int)directories.size());
+						print_list(directories,0,last);
+						jump(x,y);
+						command_console("");
+						command_console("Renamed Successfully");
+					}
+				}
+				else
+				{
+					command_console("Invalid Number of Arguments");
+				}	
+			}
+			else if(my_command=="goto")
+			{
+				cout<<arguments[0];
+				if(arguments.size()==1)
+				{
+					string filePath=getPath(arguments[0]);
+					//cout<<filePath;
+					int res=go_to(filePath);
+					if(res==1)
+					{}
+					
+				}
+				else
+				{
+					command_console("Invalid Number of Arguments");
+				}
+				
+			}
 			else
 			{
-				//INVALID Input
+				command_console("Invalid Command");
 			}
 			arguments.clear();
 			my_command="";
@@ -660,7 +752,7 @@ int command_mode()
 		else if(c==BACKSPACE)
 		{
 
-			if(y==2)	//Dont Delete ':'
+			if(y==14)	//Dont Delete ':'
 			{
 				continue;
 			}
@@ -678,42 +770,153 @@ int command_mode()
 		}
 	}
 	return 1;
+}
+int my_rename(string oldP,string newP)
+{
+	char *oldE=&oldP[0];
+	char *newE=&newP[0];
+	int res=rename(oldE,newE);
+	if(res==0)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+int go_to(string path)
+{
 	
-
+	char *entry=&path[0];
+	struct stat dir;
+	if(stat(entry,&dir)==-1)
+	{
+		command_console("Directory Does Not Exist");
+		return -1;
+	}
+	back.push(curr_dir);
+	curr_dir=path;
+	list_dir(entry);
+	last=min(currentWindowRow-4,(int)directories.size());
+	print_list(directories,0,last);
+	jump(x,y);
+	command_console("");
+	return 1;
 }
 int createFile(string inp)
 {
 	char *entry=&inp[0];
-	int res=open(entry,O_WRONLY | O_CREAT,(S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH| S_IXOTH));
+	
+	int res=open(entry,O_WRONLY | O_CREAT,0755);
 	if(res<0)
 	{
+		close(res);
 		return 0;
 	}
 	else
 	{
+		close(res);
 		return 1;
 	}
-
 }
-string getPath(string filename,string arg)
+int createDir(string inp)
 {
-	if(arg.length()==1 && arg[0]=='.')
+	char *entry=&inp[0];
+	struct stat dir;
+	if(stat(entry,&dir)!=-1)
 	{
-		return curr_dir+"/"+filename;
+		command_console("Directory Already Exist");
+		return -1;
+	}
+	int res=mkdir(entry,0771);
+	if(res<0)
+	{
+		
+		return 0;
+	}
+	else
+	{
+		
+		return 1;
+	}
+}
+void command_console(string message)
+{
+	x=currentWindowRow-3;
+	y=1;
+	jump(x,y);
+	cout<<"\033[2K";		//clears the entire line
+	cout<<"\033[38;5;50m";	//ESC[38;5;{ID}m sets background color and ID is 50 for bright blue
+	cout<<"Command Mode:";
+	
+	cout<<"\033[0m";	//Resets color again to default
+	x++;
+	jump(x,y);
+	cout<<"Current Directory is:"<<curr_dir;
+	x++;
+	jump(x,y);
+	cout<<"\033[0K";
+	cout<<message;
+	x=currentWindowRow-3;
+	y=14;
+	jump(x,y);
+	cout<<"\033[0K";
+}
+string getPath(string arg)
+{
+	if(arg.length()==1 && arg[0]=='/')
+	{
+		return home;
+	}
+	if(arg.length()==1 && arg[0]=='.' || (arg.length()==2 && arg[0]=='.' && arg[1]=='/'))
+	{
+		return curr_dir;
 	}
 	if((arg.length()==1 && arg[0]=='~') || (arg.length()==2 && arg[0]=='~' && arg[1]=='/'))
 	{
-		return home+"/"+filename;
+		return home;
 	}
-	else	//if(arg.length()>1)
+	if(arg.length()==2 && arg[0]=='.' && arg[1]=='.')
+	{
+		string ab="";
+		int i;
+		for(i=curr_dir.length()-1;i>=0;i--)
+		{
+			if(curr_dir[i]=='/')
+			{
+				break;
+			}
+		}
+		ab=curr_dir.substr(0,i);
+		return ab;
+	}
+
+	if(arg.length()==3 && arg[0]=='.' && arg[1]=='.' && arg[2]=='/')
+	{
+		string ab="";
+		int i;
+		for(i=curr_dir.length()-1;i>=0;i--)
+		{
+			if(curr_dir[i]=='/')
+			{
+				break;
+			}
+		}
+		ab=curr_dir.substr(0,i);
+		return ab;
+	}
+	else	
 	{
 		if(arg[0]=='.' && arg[1]=='/')
 		{
-			return curr_dir+"/"+arg.substr(2)+"/"+filename;
+			if(arg[arg.length()-1]=='/')arg.pop_back();
+			return curr_dir+"/"+arg.substr(2);
 		}
 		else if(arg[0]=='~' && arg[1]=='/')
 		{
-			return home+"/"+arg.substr(2)+"/"+filename;
+			if(arg[arg.length()-1]=='/')arg.pop_back();
+			return home+"/"+arg.substr(2);
 		}
 		else if(arg[0]=='.' && arg[1]=='.' && arg[2]=='/')
 		{
@@ -727,32 +930,19 @@ string getPath(string filename,string arg)
 				}
 			}
 			ab=curr_dir.substr(0,i);
+			if(arg[arg.length()-1]=='/')arg.pop_back();
+			return ab+"/"+arg.substr(3);
 			
-			if(arg.length()==3)
-			{
-				return ab+"/"+filename;
-			}
-			else
-			{
-				return ab+"/"+arg.substr(3)+"/"+filename;
-			}
+		}
+		else if(arg[0]=='/')
+		{
+			if(arg[arg.length()-1]=='/')arg.pop_back();
+			return home+arg;
 		}
 		else
 		{
-			if(arg.length()==1 && arg[0]=='/')
-			{
-				
-				return home+"/"+filename;
-			}
-			else if(arg[0]=='/')
-			{
-				return home+arg+"/"+filename;
-			}
-			else
-			{
-				return curr_dir+"/"+arg+"/"+filename;
-			}
-			
+			if(arg[arg.length()-1]=='/')arg.pop_back();
+			return curr_dir+"/"+arg;
 		}
 	}
 }
@@ -780,22 +970,8 @@ string split_command()
 		}
 		else
 		{
-			if(param.length()!=1)
-			{
-				if(param[param.length()-1]=='/')
-				{
-					param.pop_back();
-				}
-			}
 			arguments.push_back(param);
 			param="";
-		}
-	}
-	if(param.length()!=1)
-	{
-		if(param[param.length()-1]=='/')
-		{
-			param.pop_back();
 		}
 	}
 	arguments.push_back(param);

@@ -34,4 +34,5 @@ int createFile(string);
 int createDir(string);
 int my_rename(string,string);
 int go_to(string);
+int my_search(char *,char *);
 void command_console(string);

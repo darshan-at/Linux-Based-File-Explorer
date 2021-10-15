@@ -615,11 +615,11 @@ int command_mode()
 	jump(x,y);
 	while(true)
 	{
+		cin.clear();
 		c=cin.get();
-
-		if(c=='q')
+		
+		if(c==ARROW_KEY)
 		{
-
 			cout<<"\033[2K";
 			y=1;
 			return 1;
@@ -725,14 +725,11 @@ int command_mode()
 			}
 			else if(my_command=="goto")
 			{
-				cout<<arguments[0];
 				if(arguments.size()==1)
 				{
 					string filePath=getPath(arguments[0]);
 					//cout<<filePath;
 					int res=go_to(filePath);
-					if(res==1)
-					{}
 					
 				}
 				else
@@ -741,6 +738,45 @@ int command_mode()
 				}
 				
 			}
+			else if(my_command=="search")
+			{
+				
+				if(arguments.size()==1)
+				{
+					string fname=arguments[0];
+					char *entry=&fname[0];
+					char *dir_path=&curr_dir[0];
+					int res=my_search(dir_path,entry);
+					if(res==0)
+					{
+						command_console("False");
+					}
+					else
+					{
+						command_console("True");
+					}
+				}
+				else
+				{
+					command_console("Invalid Number of Arguments");
+				}
+				
+			}
+			/*else if(my_command=="delete_file")
+			{
+				if(arguments.size()==1)
+				{
+					string filePath=getPath(arguments[0]);
+					//cout<<filePath;
+					int res=delete_File(filePath);
+					
+				}
+				else
+				{
+					command_console("Invalid Number of Arguments");
+				}
+				
+			}*/
 			else
 			{
 				command_console("Invalid Command");
@@ -770,6 +806,59 @@ int command_mode()
 		}
 	}
 	return 1;
+}
+
+int my_search(char *dir_path,char *path)
+{
+	
+	string fname=string(path);
+	struct dirent *entry;
+	
+	struct stat fileInfo;
+
+	DIR *dir=opendir(dir_path);
+
+	if(dir==NULL)
+	{		
+		perror(dir_path);
+		EXIT_FAILURE;
+	}
+	else
+	{
+		
+		while ((entry = readdir(dir))!=NULL)
+		{
+			if(!strcmp(entry->d_name,"."))
+			continue;
+			else if(!strcmp(entry->d_name,".."))
+			continue;
+			char subdir[513];
+			sprintf(subdir, "%s/%s",dir_path,entry->d_name);
+			
+			stat(subdir,&fileInfo);
+			
+			if(string(entry->d_name)==fname)
+			{
+				
+				closedir(dir);
+				return 1;
+			}
+			if(S_ISDIR(fileInfo.st_mode))
+			{
+				
+				if(my_search(subdir,path))
+				{
+					
+					closedir(dir);
+					return 1;
+				}
+			}
+			
+		}	
+			
+	}
+	closedir(dir);
+	return 0;
 }
 int my_rename(string oldP,string newP)
 {

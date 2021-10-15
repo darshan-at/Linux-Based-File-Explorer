@@ -35,4 +35,8 @@ int createDir(string);
 int my_rename(string,string);
 int go_to(string);
 int my_search(char *,char *);
+int delete_File(char *);
+int delete_Dir(char *);
+
+
 void command_console(string);

@@ -441,6 +441,7 @@ void looping(int first,int last)
 					{
 						continue;
 					}
+					//Get Parent Directory
 					int i;
 					for(i=curr_dir.length()-1;i>=0;i--)
 					{
@@ -450,6 +451,7 @@ void looping(int first,int last)
 						}
 					}
 					curr_dir=curr_dir.substr(0,i);
+					//Parent Directory END
 					char *entry=&curr_dir[0];
 					list_dir(entry);
 					last=min(currentWindowRow-4,(int)directories.size());
@@ -705,7 +707,7 @@ int command_mode()
 					else if(res==1)
 					{	
 						
-						if(oldPath==curr_dir)
+						/*if(oldPath==curr_dir)
 						{
 							curr_dir=newPath;
 						}
@@ -714,7 +716,7 @@ int command_mode()
 						last=min(currentWindowRow-4,(int)directories.size());
 						print_list(directories,0,last);
 						jump(x,y);
-						command_console("");
+						command_console("");*/
 						command_console("Renamed Successfully");
 					}
 				}
@@ -762,21 +764,63 @@ int command_mode()
 				}
 				
 			}
-			/*else if(my_command=="delete_file")
+			else if(my_command=="delete_file")
 			{
 				if(arguments.size()==1)
 				{
 					string filePath=getPath(arguments[0]);
-					//cout<<filePath;
-					int res=delete_File(filePath);
 					
+					char *entry=&filePath[0];
+					int res=delete_File(entry);
+					if(res==0)
+					{
+						char *entry=&curr_dir[0];
+						list_dir(entry);
+						last=min(currentWindowRow-4,(int)directories.size());
+						print_list(directories,0,last);
+						jump(x,y);	
+						command_console("File removed Successfully");
+					}
+					else
+					{
+						command_console("Invalid Path/Filename given");
+					}
+					//command_console(entry);
 				}
 				else
 				{
 					command_console("Invalid Number of Arguments");
 				}
 				
-			}*/
+			}
+			else if(my_command=="delete_dir")
+			{
+				if(arguments.size()==1)
+				{
+					string filePath=getPath(arguments[0]);
+					char *entry=&filePath[0];
+					int res=delete_Dir(entry);
+					if(res==0)
+					{
+						char *entry=&curr_dir[0];
+						list_dir(entry);
+						last=min(currentWindowRow-4,(int)directories.size());
+						print_list(directories,0,last);
+						jump(x,y);	
+						command_console("Folder removed Successfully");
+					}
+					else
+					{
+						command_console("Invalid Path/Filename given");
+					}
+					//command_console(entry);
+				}
+				else
+				{
+					command_console("Invalid Number of Arguments");
+				}
+				
+			}
 			else
 			{
 				command_console("Invalid Command");
@@ -807,7 +851,73 @@ int command_mode()
 	}
 	return 1;
 }
+int delete_Dir(char *path)
+{
+	string dpath=string(path);
+	if(dpath==home || dpath==curr_dir)
+	{
+		return 1;
+	}
+	int res=rmdir(path);
+	if(res==-1)
+	{
+		if(errno==EEXIST || errno==ENOTEMPTY)
+		{
+			struct dirent *entry;
+			DIR *dir=opendir(path);
 
+			if(dir==NULL)
+			{		
+				perror(path);
+				EXIT_FAILURE;
+			}
+			else
+			{
+				struct stat fileInfo;
+				stat(path,&fileInfo);
+				while ((entry = readdir(dir))!=NULL)
+				{
+					if(!strcmp(entry->d_name,"."))
+					continue;
+					else if(!strcmp(entry->d_name,".."))
+					continue;
+					char subdir[513];
+					sprintf(subdir, "%s/%s",path,entry->d_name);
+					
+					stat(subdir,&fileInfo);
+					
+					if(S_ISDIR(fileInfo.st_mode))
+					{
+						if(delete_Dir(subdir)!=0)
+						{
+							return 0;
+						}
+					}
+					else
+					{
+						if(delete_File(subdir)!=0) //delete_Fille return 0 on success
+						{
+							return 0;
+						}
+					}
+					
+				}	
+					
+			}
+			
+			closedir(dir);
+			return(rmdir(path));
+		}
+	}
+	return res;
+}
+int delete_File(char *path)
+{
+	int s=remove(path);
+	
+	
+	return s;
+}
 int my_search(char *dir_path,char *path)
 {
 	

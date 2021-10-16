@@ -56,7 +56,7 @@ void list_dir(char *pwd)
 	}
 	else
 	{
-		while ((entry = readdir(dir))!=NULL)
+		while ((entry=readdir(dir))!=NULL)
 		{	
 			string s=curr_dir+"/"+(entry->d_name);
 			directories.push_back(s);	
@@ -417,6 +417,7 @@ void looping(int first,int last)
 		else if(c==ENTER)
 		{
 			string d_name=directories[first+curpos-1];
+			//Separate File/Folder name from Absolute Path
 			int i,j=0;
 			for(i=d_name.length()-1;i>=0;i--)
 			{
@@ -427,7 +428,7 @@ void looping(int first,int last)
 				j++;
 			}
 			d_name=d_name.substr(i+1,j);
-			
+			//Ends
 			if(d_name==".")
 			{
 				continue;
@@ -579,11 +580,11 @@ int check_dir(string path)
 	
 	char *entry=&path[0];
 	struct stat fileInfo;
-	
-	if (stat(entry, &fileInfo) == -1) {
+	stat(entry, &fileInfo);
+	/*if (stat(entry, &fileInfo) == -1) {
         perror(path.c_str());
         exit(EXIT_FAILURE);
-    }
+    }*/
 	if((fileInfo.st_mode & S_IFMT)==S_IFDIR)
 	{		
 		return 1;
@@ -674,6 +675,10 @@ int command_mode()
 					if(res==0)
 					{
 						command_console("Invalid Path/Filename given");
+					}
+					else if(res==-1)
+					{
+						command_console("Directory Already Exist");
 					}
 					else if(res==1)
 					{	
@@ -821,6 +826,34 @@ int command_mode()
 				}
 				
 			}
+			else if(my_command=="copy")
+			{
+				if(arguments.size()>=2)
+				{
+					string desPath=getPath(arguments[arguments.size()-1]);
+					vector<string>entries(arguments.size()-1);
+					copy_n(arguments.begin(),arguments.size()-1,entries.begin());
+					int res=my_copy(entries,desPath);
+					if(res==1)
+					{
+						char *entry=&curr_dir[0];
+						list_dir(entry);
+						last=min(currentWindowRow-4,(int)directories.size());
+						print_list(directories,0,last);
+						jump(x,y);
+						command_console("Files Copied");
+					}
+					else
+					{
+						command_console("Error");
+					}
+				}
+				else
+				{
+					command_console("Invalid Number of Arguments");
+				}
+				
+			}
 			else
 			{
 				command_console("Invalid Command");
@@ -850,6 +883,130 @@ int command_mode()
 		}
 	}
 	return 1;
+}
+int my_copy(vector<string>entries,string dPath)
+{
+	int numberOfFiles=entries.size();
+	int status=1;
+	struct stat fileInfo;
+	status=createDir(dPath);	//Creates Directory at destination if Not exist
+	if(status==0)
+	{
+		return 0;
+	}	
+	for(int i=0;i<numberOfFiles;i++)
+	{
+		entries[i]=getPath(entries[i]);
+		//Separate File Name From Path
+		string srcname;
+		int k=0,j=0;
+		for(k=entries[i].length()-1;k>=0;k--)
+		{
+			if(entries[i][k]=='/')
+			{
+				break;
+			}
+			j++;
+		}
+		srcname=entries[i].substr(k+1,j);
+		//Ends
+		if(check_dir(entries[i]))
+		{
+			if(!copyDir(srcname,entries[i],dPath))
+			{
+				return 0;
+			}
+		}
+		else
+		{
+			if(!copyFile(srcname,entries[i],dPath))
+			{
+				perror(dPath.c_str());
+				return 0;
+			}
+		}
+	}
+	return 1;
+}
+int copyDir(string srcname,string srcPath,string dest)
+{
+	//string srcPath=getPath(folder);
+	char *srcP=&srcPath[0];
+	DIR *dir=opendir(srcP); //Opens the Source Folder
+	string desPath=dest+"/"+srcname;
+	int status=createDir(desPath);
+	
+	if(status==0)
+	{
+		return 0;
+	}
+	if(dir==NULL)
+	{
+		return 0;
+	}
+
+	//Copying Permissions Of DIR
+	struct stat srcF,desF;
+	stat(srcPath.c_str(),&srcF);
+	chmod(desPath.c_str(),srcF.st_mode);
+	chown(desPath.c_str(),srcF.st_uid,srcF.st_gid);
+
+	struct dirent *entry;
+	struct stat fileInfo;
+	while((entry=readdir(dir))!=NULL)
+	{
+		if(!strcmp(entry->d_name,"."))
+		continue;
+		else if(!strcmp(entry->d_name,".."))
+		continue;
+		char subdir[513];
+		sprintf(subdir, "%s/%s",srcP,entry->d_name);
+		
+		stat(subdir,&fileInfo);
+		if(S_ISDIR(fileInfo.st_mode))
+		{
+			if(copyDir(string(entry->d_name),subdir,desPath)==0)
+			{
+				return 0;
+				
+			}
+		}
+		else
+		{
+			if(copyFile(string(entry->d_name),subdir,desPath)==0) 
+			{
+				return 0;
+			}
+		}
+	}
+	closedir(dir);
+	return 1;
+}
+int copyFile(string src,string srcPath,string dest)
+{
+	//string srcPath=curr_dir+"/"+file;
+	char *entry=&srcPath[0]; 
+	dest=dest+"/"+src;
+	char *d=&dest[0];
+	fstream in,out;
+	in.open(entry, fstream::in|fstream::binary);
+	if(in.is_open())
+	{
+		out.open(d,ostream::out);
+		char t;
+		while(in.read(&t,1))
+		{
+			out.write(&t,1);
+		}
+		in.close();
+		out.close();
+		struct stat srcF,desF;
+		stat(entry,&srcF);
+		chmod(d,srcF.st_mode);
+		chown(d,srcF.st_uid,srcF.st_gid);
+	}
+	return 1;
+
 }
 int delete_Dir(char *path)
 {
@@ -1022,17 +1179,19 @@ int createFile(string inp)
 int createDir(string inp)
 {
 	char *entry=&inp[0];
-	struct stat dir;
-	if(stat(entry,&dir)!=-1)
-	{
-		command_console("Directory Already Exist");
-		return -1;
-	}
 	int res=mkdir(entry,0771);
 	if(res<0)
 	{
+		if(errno==EEXIST)
+		{
+			
+			return -1;
+		}
+		else
+		{
+			return 0;
+		}
 		
-		return 0;
 	}
 	else
 	{

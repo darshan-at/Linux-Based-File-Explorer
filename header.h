@@ -21,6 +21,7 @@ using namespace std;
 void print_list(vector<string>,int,int);
 void enableRAW(char *);
 int check_dir(string);
+int check_dir_wo_error(string);
 void list_dir(char *);
 void display_info(string);
 long long get_Dir_size(char *);
@@ -37,6 +38,8 @@ int go_to(string);
 int my_search(char *,char *);
 int delete_File(char *);
 int delete_Dir(char *);
-
+int my_copy(vector<string>,string);
+int copyFile(string,string,string);
+int copyDir(string,string,string);
 
 void command_console(string);

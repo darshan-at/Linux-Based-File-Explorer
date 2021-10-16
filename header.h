@@ -11,6 +11,7 @@
 #include <grp.h>
 #include <signal.h>
 #include <fcntl.h>
+#include <utime.h>
 
 #define deb(x) cout<<#x<<" is "<<x<<endl;
 #define deb1(x,y) cout<<x<<" "<<y<<endl;
@@ -41,5 +42,6 @@ int delete_Dir(char *);
 int my_copy(vector<string>,string);
 int copyFile(string,string,string);
 int copyDir(string,string,string);
+int my_move(vector<string>,string);
 
 void command_console(string);

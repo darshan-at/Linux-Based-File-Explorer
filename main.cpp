@@ -20,7 +20,29 @@ int ENTER=10;
 int BACKSPACE=127;
 int RIGHT_KEY=67;
 int LEFT_KEY=68;
-	
+/*void sig_handler(int sig)
+{
+  if (SIGWINCH == sig) {
+	  	ioctl(STDIN_FILENO, TIOCGWINSZ, &window_size);	//get Window Size
+		
+		char *entry=&curr_dir[0];
+		currentWindowRow=window_size.ws_row;
+		currentWindowWidth=window_size.ws_col;
+		list_dir(entry);
+		last=min(currentWindowRow-4,(int)directories.size());
+		print_list(directories,0,last);
+
+		jump(currentWindowRow-3,0);
+		cout<<"\033[38;5;50m\033[1m";
+		printf("Normal Mode");
+		cout<<"\033[0m";
+		jump(currentWindowRow-2,1);
+		cout<<"Current Directory is:"<<curr_dir;
+		jump(1,1);
+		
+  }
+
+}*/
 int main()
 {
 	
@@ -35,6 +57,7 @@ int main()
 	//enter into RAW MODE
 	char *temp;
 	temp=&pwd[0];
+	//signal(SIGWINCH, sig_handler);
 	enableRAW(temp);
 	CLEAR_SCREEN;
 	return 0;
@@ -273,7 +296,18 @@ void display_info(string item)
 	}
 	string mod_time=ctime(&fileInfo.st_mtime);
 	size_string.resize(7,' ');
-	cout<<item<<'\t'<<permission<<'\t'<<o_name<<"\t"<<g_name<<"\t"<<size_string<<"\t"<<mod_time;
+	if(permission[0]=='d')
+	{
+		//cout<<"\033[38;5;50m";
+		cout<<"\033[38;5;84m\033[1m";
+		cout<<item<<'\t'<<permission<<'\t'<<o_name<<"\t"<<g_name<<"\t"<<size_string<<"\t"<<mod_time;;
+		cout<<"\033[0m";
+	}
+	else
+	{
+		cout<<item<<'\t'<<permission<<'\t'<<o_name<<"\t"<<g_name<<"\t"<<size_string<<"\t"<<mod_time;;
+	}
+	//cout<<'\t'<<permission<<'\t'<<o_name<<"\t"<<g_name<<"\t"<<size_string<<"\t"<<mod_time;
 	
 }
 void disableRAW()
@@ -300,6 +334,7 @@ void enableRAW(char *pwd)
 	{
 		fprintf(stderr,"Fail to achieve desired attribute");
 	}
+	
 	looping(first,last);	
 }
 
@@ -314,6 +349,7 @@ void looping(int first,int last)
 	fflush(0);
 	while(true)
 	{
+		
 		cin.clear();
 		ioctl(STDIN_FILENO, TIOCGWINSZ, &window_size);	//get Window Size
 		if(window_size.ws_row!=currentWindowRow || window_size.ws_col!=currentWindowWidth)
@@ -329,7 +365,7 @@ void looping(int first,int last)
 			continue;
 		}
 		jump(currentWindowRow-3,0);
-		cout<<"\033[38;5;50m";
+		cout<<"\033[38;5;50m\033[1m";
 		printf("Normal Mode");
 		cout<<"\033[0m";
 		jump(currentWindowRow-2,1);
@@ -604,7 +640,7 @@ int command_mode()
 	y=1;
 	jump(x,y);
 	cout<<"\033[2K";		//clears the entire line
-	cout<<"\033[38;5;50m";	//ESC[38;5;{ID}m sets background color and ID is 50 for bright blue
+	cout<<"\033[38;5;50m\033[1m";	//ESC[38;5;{ID}m sets background color and ID is 50 for bright blue
 	cout<<"Command Mode:";
 	
 	cout<<"\033[0m";	//Resets color again to default
@@ -841,11 +877,39 @@ int command_mode()
 						last=min(currentWindowRow-4,(int)directories.size());
 						print_list(directories,0,last);
 						jump(x,y);
-						command_console("Files Copied");
+						command_console("Files/Folders Copied");
 					}
 					else
 					{
-						command_console("Error");
+						command_console("Some Error Occurred ,Maybe Partial Files/Folder Copied");
+					}
+				}
+				else
+				{
+					command_console("Invalid Number of Arguments");
+				}
+				
+			}
+			else if(my_command=="move")
+			{
+				if(arguments.size()>=2)
+				{
+					string desPath=getPath(arguments[arguments.size()-1]);
+					vector<string>entries(arguments.size()-1);
+					copy_n(arguments.begin(),arguments.size()-1,entries.begin());
+					int res=my_move(entries,desPath);
+					if(res==1)
+					{
+						char *entry=&curr_dir[0];
+						list_dir(entry);
+						last=min(currentWindowRow-4,(int)directories.size());
+						print_list(directories,0,last);
+						jump(x,y);
+						command_console("Files/Folders Moved");
+					}
+					else
+					{
+						command_console("Some Error Occurred");
 					}
 				}
 				else
@@ -884,6 +948,36 @@ int command_mode()
 	}
 	return 1;
 }
+
+int my_move(vector<string>entries,string dPath)
+{
+	int status=my_copy(entries,dPath);
+	if(status==1)
+	{
+		for(int i=0;i<entries.size();i++)
+		{
+			string absPath=getPath(entries[i]);
+			char *entry=&absPath[0];
+			if(check_dir(absPath))
+			{
+				if(delete_Dir(entry)!=0)
+				{
+					return 0;
+				}
+			}
+			else
+			{
+				if(delete_File(entry)!=0)
+				{
+					return 0;
+				}
+			}
+		}
+		return 1;
+	}
+	return 0;
+}
+
 int my_copy(vector<string>entries,string dPath)
 {
 	int numberOfFiles=entries.size();
@@ -984,9 +1078,19 @@ int copyDir(string srcname,string srcPath,string dest)
 }
 int copyFile(string src,string srcPath,string dest)
 {
+	
 	//string srcPath=curr_dir+"/"+file;
 	char *entry=&srcPath[0]; 
 	dest=dest+"/"+src;
+	if(srcPath==dest)
+	{
+		struct utimbuf n_t;
+		struct stat fileInfo;
+		stat(dest.c_str(),&fileInfo);
+		n_t.modtime = time(NULL);    		/* set modified to current time */
+		utime(dest.c_str(), &n_t);
+		return 1;
+	}
 	char *d=&dest[0];
 	fstream in,out;
 	in.open(entry, fstream::in|fstream::binary);

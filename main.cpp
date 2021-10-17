@@ -20,29 +20,7 @@ int ENTER=10;
 int BACKSPACE=127;
 int RIGHT_KEY=67;
 int LEFT_KEY=68;
-/*void sig_handler(int sig)
-{
-  if (SIGWINCH == sig) {
-	  	ioctl(STDIN_FILENO, TIOCGWINSZ, &window_size);	//get Window Size
-		
-		char *entry=&curr_dir[0];
-		currentWindowRow=window_size.ws_row;
-		currentWindowWidth=window_size.ws_col;
-		list_dir(entry);
-		last=min(currentWindowRow-4,(int)directories.size());
-		print_list(directories,0,last);
 
-		jump(currentWindowRow-3,0);
-		cout<<"\033[38;5;50m\033[1m";
-		printf("Normal Mode");
-		cout<<"\033[0m";
-		jump(currentWindowRow-2,1);
-		cout<<"Current Directory is:"<<curr_dir;
-		jump(1,1);
-		
-  }
-
-}*/
 int main()
 {
 	
@@ -748,7 +726,7 @@ int command_mode()
 					else if(res==1)
 					{	
 						
-						/*if(oldPath==curr_dir)
+						if(oldPath==curr_dir)
 						{
 							curr_dir=newPath;
 						}
@@ -757,7 +735,7 @@ int command_mode()
 						last=min(currentWindowRow-4,(int)directories.size());
 						print_list(directories,0,last);
 						jump(x,y);
-						command_console("");*/
+						
 						command_console("Renamed Successfully");
 					}
 				}
@@ -1428,7 +1406,15 @@ string split_command()
 	{
 		if(command_input[j]!=' ')
 		{
-			param.append(1,command_input[j]);
+			if(command_input[j]=='\\')
+			{
+				j++;
+				param.append(1,' ');
+			}
+			else
+			{
+				param.append(1,command_input[j]);
+			}
 		}
 		else
 		{

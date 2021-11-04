@@ -25,7 +25,12 @@ A fully functional File Explorer Application, with a restricted feature set.
 | ../ | Parent Directory of Current Directory |
 
 
+
 ## Features 
 - Changes will be reflected in NORMAL MODE file list also as you execute any command from COMMAND MODE.
 - Directories will show **Total Size** including it's subfiles as well as folders.
 - Scrolling can be done by `k` and `l` keys ,irrespective of cursor position. 
+
+## Demo Image
+
+![demo](https://user-images.githubusercontent.com/43428382/140296262-674a3b7a-621e-4832-9ef8-704385d5b468.png)

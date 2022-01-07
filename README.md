@@ -4,6 +4,10 @@
 
 A fully functional File Explorer Application, with a restricted feature set.
 
+## Steps to Run
+- Open the terminal in Linux where `main.cpp` is located.
+- Run `g++ main.cpp` on terminal
+- Run `./a.out` on terminal
 
 ## Some Assumptions
 
